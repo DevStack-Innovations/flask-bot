@@ -1,0 +1,6 @@
+flask-wtf==1.2.1
+requests==2.32.3
+Flask==2.0.1
+WTForms==3.0.1
+celery==5.2.7
+redis==4.3.4

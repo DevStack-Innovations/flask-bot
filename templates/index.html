@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Jornaya Lead ID Extractor</title>
+    <link rel="stylesheet" href="/static/style.css" />
+  </head>
+  <body>
+    <div class="container">
+      <div class="card">
+        <h2>Jornaya Lead ID Extractor</h2>
+        <form id="phoneForm" method="POST" action="/submit_form">
+          {{ form.phone.label }} {{ form.phone(size=20, placeholder="Enter
+          10-digit phone number") }}
+          <button type="submit">Submit</button>
+        </form>
+        <div id="result"></div>
+      </div>
+    </div>
+    <script>
+      document
+        .getElementById("phoneForm")
+        .addEventListener("submit", async function (event) {
+          event.preventDefault();
+          console.log("Form submission intercepted by JavaScript");
+
+          const phoneInput = document.querySelector(
+            'input[name="phone"]'
+          ).value;
+          const resultDiv = document.getElementById("result");
+          resultDiv.innerHTML = '<div class="spinner"></div>Submitting...';
+
+          try {
+            console.log(
+              "Sending POST request to /submit_form with phone:",
+              phoneInput
+            );
+            const response = await fetch("/submit_form", {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/x-www-form-urlencoded",
+              },
+              body: new URLSearchParams({ phone: phoneInput }),
+            });
+            console.log("Response status:", response.status);
+            const data = await response.json();
+            console.log("Response data:", data);
+
+            if (data.error) {
+              resultDiv.innerHTML = `<span style="color: red;">Error: ${data.error}</span>`;
+              return;
+            }
+
+            const taskId = data.task_id;
+            resultDiv.innerHTML = `<div class="spinner"></div>Processing... (Task ID: ${taskId})`;
+
+            await checkTaskStatus(taskId);
+          } catch (error) {
+            console.error("Fetch error:", error);
+            resultDiv.innerHTML = `<span style="color: red;">Error: ${error.message}</span>`;
+          }
+        });
+
+      async function checkTaskStatus(taskId) {
+        const resultDiv = document.getElementById("result");
+        while (true) {
+          console.log("Checking task status for ID:", taskId);
+          const response = await fetch(`/check_task/${taskId}`);
+          const data = await response.json();
+          console.log("Task status:", data);
+
+          if (data.status === "SUCCESS") {
+            resultDiv.innerHTML = `<span style="color: green;">Lead ID: ${data.result}</span>`;
+            break;
+          } else if (data.status === "FAILURE") {
+            resultDiv.innerHTML = `<span style="color: red;">Error: ${data.result}</span>`;
+            break;
+          }
+          await new Promise((resolve) => setTimeout(resolve, 2000));
+        }
+      }
+    </script>
+  </body>
+</html>
